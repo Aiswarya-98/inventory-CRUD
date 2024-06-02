@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react"
-import { addItemApi, getAllItemsApi } from "../Services/allAPI"
+import React, { useEffect, useState, useParams } from "react"
+import { addItemApi, deleteAnItemApi, editAnItemApi, getAllItemsApi } from "../Services/allAPI"
+
 
 function Home() {
 
@@ -8,6 +9,10 @@ function Home() {
 
   const [newProduct,setNewProduct]=useState({
     title:"",price:"",productImage:""
+  })
+
+  const [editProduct, setEditProduct] = useState({
+    _id:'',title:'',price:'',productImage:''
   })
 
 
@@ -46,9 +51,6 @@ function Home() {
 
 
 
-
-
-
   // handling add item fn
 
   const handleAddItem = async(e)=>{
@@ -72,9 +74,12 @@ function Home() {
       console.log("add",result);
       if(result.status === 200){
         alert("Item added successfully!!")
-        setProductDetails([...productDetails,newProduct])
+        // setProductDetails([...productDetails,newProduct])
+        // setProductDetails([...productDetails,result.data])
+        // when u set product in this way, then the newly added item will be shown at first row
+        setProductDetails([result.data,...productDetails])
         setNewProduct({ title: "", price: "", productImage: "" });
-
+       
       }else{
         alert("Something went wrong!!")
         console.log(result.response.data);
@@ -82,20 +87,61 @@ function Home() {
     }
   }
 
-  // // get all items
+  const baseUrl = "http://localhost:4000/uploads/"
 
-  // const getAllItems = async()=>{
 
-  //   try{
-  //     const result = await getAllItemsApi({
-  //       "Content-Type":"application/json"
-  //     })
-  //   setProductDetails(result)
-  //   }catch(err){
-  //     console.log(`error in fetching products ${err}`)
-  //   }
 
-  // }
+
+  // edit an item
+
+  const handleUpdate = async()=>{
+
+  //  e.preventDefault()
+    const {_id,title,price,productImage} = editProduct
+
+    console.log("editproduct",editProduct);
+    if(!title||!price||!productImage){
+      alert("Please fill all fields ooof edit!!")
+    }else{
+      const reqBody = new FormData()
+      reqBody.append("title",title)
+      reqBody.append("price",price)
+      reqBody.append("productImage", productImage);
+
+      const reqHeader = { "Content-Type": "multipart/form-data" };
+      const result = await editAnItemApi(_id, reqBody, reqHeader);
+
+      console.log("edit result",result);
+  
+      if (result.status === 200) {
+        alert("Item updated successfully!!");
+        setProductDetails([...productDetails,editProduct])
+        setEditProduct({ _id: "", title: "", price: "", productImage: "" });
+      } else {
+        alert(result.response.data);
+      }
+    };
+  }
+
+
+
+  // delete item
+
+  const handleDelete = async(id)=>{
+
+    const reqHeader={
+      "Content-Type":"multipart/form-data"
+    }
+    const result = await deleteAnItemApi(id,reqHeader)
+    if (result.status === 200) {
+      alert("Item deleted successfully!!");
+      setProductDetails(productDetails.filter(product => product._id !== id));
+  }else{
+    alert(result.response.data)
+  }
+  }
+
+
 
   return (
     <>
@@ -120,12 +166,7 @@ function Home() {
               <div class="modal-body">
                 {/* form in modal */}
 
-                {/* <div class="mb-3">
-                  <label for="exampleInputEmail1" class="form-label">
-                    Id:
-                  </label>
-                  <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" />
-                </div> */}
+              
 
                 <div class="mb-3">
                   <label for="exampleInputEmail1" class="form-label">
@@ -183,24 +224,40 @@ function Home() {
           {
           productDetails.map((product,index)=>(
          
-              <tr key={index}>
+              <tr key={product._id}>
               <th scope="row">{index+1}</th>
               <td>{product.title}</td>
               <td>{product.price}</td>
               <td>
-                <img src={preview?preview:"null"} alt={product.productImage} />
+                <img src={`${baseUrl}${product.productImage}`} alt={product.productImage} height={100} width={100}/>
               </td>
              
               {/* edit */}
               <td>
                 
-                {/* <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#exampleModal1">
+                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#exampleModal1" onClick={()=>setEditProduct(product)}>
                   Edit Item
-                </button> */}
+                </button>
+              </td>
+
+              <td>
+                <button type="button" class="btn btn-danger" onClick={() => handleDelete(product._id)}>
+                  Delete
+                </button>
+              </td>
+            </tr>
+
+          ))
+          }
+        
+   
+        </tbody>
+      </table>
+
 
                 {/* modal for edit */}
 
-                {/* <div class="modal fade" id="exampleModal1" tabindex="-1" aria-labelledby="exampleModalLabel1" aria-hidden="true">
+                 <div class="modal fade" id="exampleModal1" tabindex="-1" aria-labelledby="exampleModalLabel1" aria-hidden="true">
                   <div class="modal-dialog">
                     <div class="modal-content">
                       <div class="modal-header">
@@ -212,56 +269,47 @@ function Home() {
                       <div class="modal-body">
                         {/* form in modal */}
 
-                        {/* <div class="mb-3">
-                          <label for="exampleInputEmail1" class="form-label">
-                            Id:
-                          </label>
-                          <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" />
-                        </div>
 
-                        <div class="mb-3">
-                          <label for="exampleInputEmail1" class="form-label">
-                            Title
-                          </label>
-                          <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" />
-                        </div>
+                 <div class="mb-3">
+                  <label for="exampleInputEmail1" class="form-label">
+                    Title
+                  </label>
+                  <input type="text" class="form-control" id="exampleInputEmail1" value={editProduct.title} aria-describedby="emailHelp" 
+                  onChange={e=>setEditProduct({...editProduct,title:e.target.value})} />
+                </div>
 
-                        <div class="mb-3">
-                          <label for="exampleInputEmail1" class="form-label">
-                            Price
-                          </label>
-                          <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" />
-                        </div> */}
+                <div class="mb-3">
+                  <label for="exampleInputEmail1" class="form-label">
+                    Price
+                  </label>
+                  <input type="text" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" value={editProduct.price}
+                  onChange={e=>setEditProduct({...editProduct,price:e.target.value})}/>
+                </div>
+
+                <div class="mb-3">
+                  <label for="exampleInputEmail1" class="form-label">
+                    Product Image
+                  </label>
+                  <input type="file" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp"  
+                  onChange={e=>setEditProduct({...editProduct,productImage:e.target.files[0]})}/>
+                </div> 
 
                         {/* form in modal */}
-                      {/* </div>
+                       </div>
                       <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                           Close
-                        </button>
-                        <button type="button" class="btn btn-warning">
+                        </button> 
+                         <button type="button" class="btn btn-warning" onClick={handleUpdate}>
                           Edit Item
-                        </button>
-                      </div>
+                        </button> 
+                       </div>
                     </div>
                   </div>
-                </div>  */}
+                </div>  
                 
-              </td>
-              <td>
-                <button type="button" class="btn btn-danger">
-                  Delete
-                </button>
-              </td>
-            </tr>
-
-          ))
-          }
-        
-          
-   
-        </tbody>
-      </table>
+              
+       
     </>
   )
 }

@@ -14,3 +14,16 @@ export const addItemApi = async(reqBody,reqHeader)=>{
 export const getAllItemsApi = async(reqHeader)=>{
   return await commonApi("GET",`${BASE_URL}/products/get/all`,"",reqHeader)
 }
+
+
+// edit an item
+
+export const editAnItemApi = async(Id,reqBody,reqHeader)=>{
+  return await commonApi("PUT",`${BASE_URL}/product/edit/${Id}`,reqBody,reqHeader)
+}
+
+// delete an item
+
+export const deleteAnItemApi = async(id,reqHeader)=>{
+  return await commonApi("DELETE",`${BASE_URL}/product/remove/${id}`,{},reqHeader)
+}

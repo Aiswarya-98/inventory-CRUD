@@ -45,7 +45,7 @@ exports.getAllProducts = async(req,res)=>{
 // update a product
 
 exports.editProduct = async(req,res)=>{
-  const {title,price} = req.body
+  const {title,price,productImage} = req.body
   const {id} = req.params
   const uploadProductImage = req.file ? req.file.filename : productImage
 
